@@ -1,0 +1,6 @@
+[submodule "src/github.com/BurntSushi/toml"]
+	path = src/github.com/BurntSushi/toml
+	url = git://github.com/BurntSushi/toml.git
+[submodule "src/github.com/go-sql-driver/mysql"]
+	path = src/github.com/go-sql-driver/mysql
+	url = git://github.com/go-sql-driver/mysql.git

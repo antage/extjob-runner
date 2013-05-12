@@ -1,0 +1,12 @@
+[mysql]
+host = "localhost"
+port = 3306
+database = "videoconverter"
+username = "root"
+password = "toor"
+table = "convert"
+
+[ffmpeg]
+path = "/usr/bin/avconv"
+timeout = 300
+workers = 2
