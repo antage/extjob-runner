@@ -42,9 +42,10 @@ var threads sync.WaitGroup
 func main() {
 	var err error
 
+	flag.Parse()
+
 	reopenLogger()
 
-	flag.Parse()
 	if len(*configFilename) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: configuration filename is absent\n")
 		logger.Fatalf("Error: configuration filename is absent\n")
