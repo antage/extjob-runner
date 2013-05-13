@@ -37,7 +37,7 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 		err := cmd.Start()
 		if err != nil {
 			logger.Printf("Can't start FFMpeg for job #%d: %s\n", job.id, err.Error())
-			job.SetDone(2)
+			job.SetDone(3)
 			queue.freeWorker <- instance
 			return
 		}
@@ -52,16 +52,16 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 		case <-process_complete:
 			logger.Printf("FFMpeg process complete for job #%d, success = %v\n", job.id, cmd.ProcessState.Success())
 			if cmd.ProcessState.Success() {
-				job.SetDone(0)
+				job.SetDone(1)
 			} else {
 				logger.Println(output.String())
-				job.SetDone(1)
+				job.SetDone(2)
 			}
 			queue.freeWorker <- instance
 		case <-time.After(time.Duration(config.FFMpeg.Timeout) * time.Second):
 			logger.Printf("FFMpeg process killed by timeout for job #%d\n", job.id)
 			cmd.Process.Kill()
-			job.SetDone(2)
+			job.SetDone(3)
 			queue.freeWorker <- instance
 		case <-instance.quit:
 			cmd.Process.Kill()
