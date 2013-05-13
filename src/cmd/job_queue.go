@@ -32,7 +32,6 @@ loop:
 	for {
 		select {
 		case <-instance.quit:
-
 			break loop
 		case job := <-instance.queue:
 			logger.Printf("Process job #%d\n", job.id)
