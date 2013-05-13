@@ -39,6 +39,29 @@ var config Config
 var db *sql.DB
 var threads sync.WaitGroup
 
+func dsn(for_log bool) string {
+	timeout := uint(60)
+	if (2 * config.FFMpeg.Timeout) > timeout {
+		timeout = 2 * config.FFMpeg.Timeout
+	}
+
+	password := config.MySql.Password
+	if for_log {
+		password = "********"
+	}
+
+	dsn :=
+		fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&timeout=%ds&wait_timeout=%d",
+			config.MySql.Username,
+			password,
+			net.JoinHostPort(config.MySql.Host, strconv.Itoa(int(config.MySql.Port))),
+			config.MySql.Database,
+			timeout,
+			timeout)
+
+	return dsn
+}
+
 func main() {
 	var err error
 
@@ -55,23 +78,9 @@ func main() {
 		logger.Fatalf("Can't parse configuration file: %s\n", err.Error())
 	}
 
-	timeout := uint(60)
-	if (2 * config.FFMpeg.Timeout) > timeout {
-		timeout = 2 * config.FFMpeg.Timeout
-	}
+	logger.Printf("Open database connection with DSN: %s\n", dsn(true))
 
-	dsn :=
-		fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&timeout=%ds&wait_timeout=%d",
-			config.MySql.Username,
-			config.MySql.Password,
-			net.JoinHostPort(config.MySql.Host, strconv.Itoa(int(config.MySql.Port))),
-			config.MySql.Database,
-			timeout,
-			timeout)
-
-	logger.Printf("Open database connection with DSN: %s\n", dsn)
-
-	db, err = sql.Open("mysql", dsn)
+	db, err = sql.Open("mysql", dsn(false))
 	if err != nil {
 		logger.Fatalf("Can't connect to database server: %s\n", err.Error())
 	}
