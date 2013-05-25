@@ -1,10 +1,11 @@
 DEPS = $(wildcard src/**/*.go)
+TARGET = extjob-runner
 
-all: bin/videoconverter
+all: bin/$(TARGET)
 
-bin/videoconverter: $(DEPS)
+bin/$(TARGET): $(DEPS)
 	GOPATH=$(shell pwd) go build -o $@ cmd
 
 .PHONY: clean
 clean:
-	rm -f bin/videoconverter
+	rm -f bin/$(TARGET)
