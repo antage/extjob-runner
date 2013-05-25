@@ -39,7 +39,7 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 		err = cmd.Start()
 		if err != nil {
 			logger.Printf("Can't start command for job #%d: %s\n", job.id, err.Error())
-			job.SetDone(3)
+			job.SetDone(JOB_FATAL)
 			queue.freeWorker <- instance
 			return
 		}
@@ -54,16 +54,16 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 		case <-process_complete:
 			logger.Printf("Command process complete for job #%d, success = %v\n", job.id, cmd.ProcessState.Success())
 			if cmd.ProcessState.Success() {
-				job.SetDone(1)
+				job.SetDone(JOB_DONE)
 			} else {
 				logger.Println(output.String())
-				job.SetDone(2)
+				job.SetDone(JOB_ERROR)
 			}
 			queue.freeWorker <- instance
 		case <-time.After(time.Duration(config.Command.Timeout) * time.Second):
 			logger.Printf("Command process killed by timeout for job #%d\n", job.id)
 			cmd.Process.Kill()
-			job.SetDone(3)
+			job.SetDone(JOB_FATAL)
 			queue.freeWorker <- instance
 		case <-instance.quit:
 			cmd.Process.Kill()

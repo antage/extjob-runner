@@ -5,10 +5,11 @@ database = "extjobs"
 username = "root"
 password = "toor"
 table = "convert"
-params = ["path"]
+params = ["input", "output"]
+params_filter = ["\\A[/_0-9A-Za-z.\\-]+\\z", "\\A[/_0-9A-Za-z.\\-]+\\z"]
 
 [command]
-template = "/usr/bin/avconv {{index . 0}}"
+template = "/usr/bin/avconv {{index . 0}} {{index . 1}}"
 timeout = 300
 workers = 2
 shell = "/bin/sh"

@@ -8,6 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 	"sync"
 	"text/template"
@@ -19,13 +20,16 @@ type Config struct {
 }
 
 type MysqlConfig struct {
-	Host     string
-	Port     uint16
-	Username string
-	Password string
-	Database string
-	Table    string
-	Params   []string
+	Host         string
+	Port         uint16
+	Username     string
+	Password     string
+	Database     string
+	Table        string
+	Params       []string
+	ParamsFilter []string `toml:"params_filter"`
+
+	compiledParamsFilter []*regexp.Regexp
 }
 
 type CommandConfig struct {
@@ -81,6 +85,18 @@ func main() {
 
 	if _, err := toml.DecodeFile(*configFilename, &config); err != nil {
 		logger.Fatalf("Can't parse configuration file: %s\n", err.Error())
+	}
+
+	if len(config.MySql.Params) != len(config.MySql.ParamsFilter) {
+		logger.Fatalf("params_filter length is mismatched to params length\n")
+	}
+
+	config.MySql.compiledParamsFilter = make([]*regexp.Regexp, len(config.MySql.ParamsFilter))
+	for i := range config.MySql.ParamsFilter {
+		config.MySql.compiledParamsFilter[i], err = regexp.Compile(config.MySql.ParamsFilter[i])
+		if err != nil {
+			logger.Fatalf("Can't compile regexp '%s': %s\n", config.MySql.ParamsFilter[i], err.Error())
+		}
 	}
 
 	config.Command.compiledTemplate, err = template.New("command").Parse(config.Command.Template)

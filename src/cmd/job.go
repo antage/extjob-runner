@@ -4,6 +4,14 @@ import (
 	"fmt"
 )
 
+const (
+	JOB_FILTERED = -1
+	JOB_TODO     = 0
+	JOB_DONE     = 1
+	JOB_ERROR    = 2
+	JOB_FATAL    = 3
+)
+
 type job struct {
 	id     int32
 	params []string

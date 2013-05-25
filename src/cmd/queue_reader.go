@@ -48,7 +48,15 @@ func (instance *queueReader) processJob() {
 	}
 	job.params = make([]string, len(config.MySql.Params))
 	for i := range config.MySql.Params {
-		job.params[i] = string(*(columns[i+1].(*[]byte)))
+		b := *(columns[i+1].(*[]byte))
+		if !config.MySql.compiledParamsFilter[i].Match(b) {
+			logger.Printf("Job #%d SQL-data filtered: params #%d (0-based index) doesn't match filter\n", job.id, i)
+			job.SetDone(JOB_FILTERED)
+			return
+		} else {
+			job.params[i] = string(b)
+		}
+
 	}
 
 	logger.Printf("Found new job #%d, params: %v\n", job.id, job.params)
