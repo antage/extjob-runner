@@ -14,9 +14,9 @@ func newJobQueue(quit chan bool) *jobQueue {
 	q.queue = make(chan *job)
 	q.quit = quit
 
-	q.freeWorker = make(chan *worker, config.FFMpeg.Workers)
-	q.workers = make([]*worker, config.FFMpeg.Workers)
-	for i := uint(0); i < config.FFMpeg.Workers; i++ {
+	q.freeWorker = make(chan *worker, config.Command.Workers)
+	q.workers = make([]*worker, config.Command.Workers)
+	for i := uint(0); i < config.Command.Workers; i++ {
 		worker := newWorker()
 		q.workers[i] = worker
 		q.freeWorker <- worker

@@ -5,8 +5,10 @@ database = "videoconverter"
 username = "root"
 password = "toor"
 table = "convert"
+params = ["path"]
 
-[ffmpeg]
-path = "/usr/bin/avconv"
+[command]
+template = "/usr/bin/avconv {{index . 0}}"
 timeout = 300
 workers = 2
+shell = "/bin/sh"

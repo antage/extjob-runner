@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"os/exec"
-	"strings"
 	"time"
 )
 
@@ -28,15 +27,18 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 	go func() {
 		defer threads.Done()
 
-		argv := strings.Split(job.path, " ")
-		cmd := exec.Command(config.FFMpeg.Path, argv...)
+		var command bytes.Buffer
+		err := config.Command.compiledTemplate.Execute(&command, job.params)
+
+		logger.Printf("Start command: %s\n", command.String())
+		cmd := exec.Command(config.Command.Shell, "-c", command.String())
 		var output bytes.Buffer
 		cmd.Stderr = &output
 		cmd.Stdout = &output
 
-		err := cmd.Start()
+		err = cmd.Start()
 		if err != nil {
-			logger.Printf("Can't start FFMpeg for job #%d: %s\n", job.id, err.Error())
+			logger.Printf("Can't start command for job #%d: %s\n", job.id, err.Error())
 			job.SetDone(3)
 			queue.freeWorker <- instance
 			return
@@ -50,7 +52,7 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 
 		select {
 		case <-process_complete:
-			logger.Printf("FFMpeg process complete for job #%d, success = %v\n", job.id, cmd.ProcessState.Success())
+			logger.Printf("Command process complete for job #%d, success = %v\n", job.id, cmd.ProcessState.Success())
 			if cmd.ProcessState.Success() {
 				job.SetDone(1)
 			} else {
@@ -58,8 +60,8 @@ func (instance *worker) run(queue *jobQueue, job *job) {
 				job.SetDone(2)
 			}
 			queue.freeWorker <- instance
-		case <-time.After(time.Duration(config.FFMpeg.Timeout) * time.Second):
-			logger.Printf("FFMpeg process killed by timeout for job #%d\n", job.id)
+		case <-time.After(time.Duration(config.Command.Timeout) * time.Second):
+			logger.Printf("Command process killed by timeout for job #%d\n", job.id)
 			cmd.Process.Kill()
 			job.SetDone(3)
 			queue.freeWorker <- instance

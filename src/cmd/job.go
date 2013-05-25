@@ -5,8 +5,8 @@ import (
 )
 
 type job struct {
-	id   int32
-	path string
+	id     int32
+	params []string
 }
 
 func (instance job) SetDone(rc int) {

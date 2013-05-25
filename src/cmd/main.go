@@ -10,11 +10,12 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"text/template"
 )
 
 type Config struct {
-	MySql  MysqlConfig  `toml:"mysql"`
-	FFMpeg FFMpegConfig `toml:"ffmpeg"`
+	MySql   MysqlConfig   `toml:"mysql"`
+	Command CommandConfig `toml:"command"`
 }
 
 type MysqlConfig struct {
@@ -24,12 +25,16 @@ type MysqlConfig struct {
 	Password string
 	Database string
 	Table    string
+	Params   []string
 }
 
-type FFMpegConfig struct {
-	Path    string
-	Timeout uint
-	Workers uint
+type CommandConfig struct {
+	Template string
+	Timeout  uint
+	Workers  uint
+	Shell    string
+
+	compiledTemplate *template.Template
 }
 
 var configFilename = flag.String("c", "", "configuration filename")
@@ -41,8 +46,8 @@ var threads sync.WaitGroup
 
 func dsn(for_log bool) string {
 	timeout := uint(60)
-	if (2 * config.FFMpeg.Timeout) > timeout {
-		timeout = 2 * config.FFMpeg.Timeout
+	if (2 * config.Command.Timeout) > timeout {
+		timeout = 2 * config.Command.Timeout
 	}
 
 	password := config.MySql.Password
@@ -76,6 +81,11 @@ func main() {
 
 	if _, err := toml.DecodeFile(*configFilename, &config); err != nil {
 		logger.Fatalf("Can't parse configuration file: %s\n", err.Error())
+	}
+
+	config.Command.compiledTemplate, err = template.New("command").Parse(config.Command.Template)
+	if err != nil {
+		logger.Fatalf("Can't compile command template: %s\n", err.Error())
 	}
 
 	logger.Printf("Open database connection with DSN: %s\n", dsn(true))

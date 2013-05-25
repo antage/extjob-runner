@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -21,7 +22,9 @@ func newQueueReader(quit chan bool) *queueReader {
 	instance.quit = quit
 	instance.lastId = 0
 
-	instance.stm, err = db.Prepare(fmt.Sprintf("SELECT id, path FROM `%s` WHERE done = 0 AND id > ? ORDER BY `id` LIMIT 1", config.MySql.Table))
+	params_columns := strings.Join(config.MySql.Params, ", ")
+
+	instance.stm, err = db.Prepare(fmt.Sprintf("SELECT id, %s FROM `%s` WHERE done = 0 AND id > ? ORDER BY `id` LIMIT 1", params_columns, config.MySql.Table))
 	if err != nil {
 		logger.Fatalf("Can't prepare SQL-statement: %s\n", err.Error())
 	}
@@ -31,17 +34,24 @@ func newQueueReader(quit chan bool) *queueReader {
 
 func (instance *queueReader) processJob() {
 	var job job
-	var pathb []byte
-	if err := instance.stm.QueryRow(instance.lastId).Scan(&job.id, &pathb); err != nil {
+	columns := make([]interface{}, 0, len(config.MySql.Params)+1)
+	columns = append(columns, &job.id)
+	for _ = range config.MySql.Params {
+		columns = append(columns, new([]byte))
+	}
+	if err := instance.stm.QueryRow(instance.lastId).Scan(columns...); err != nil {
 		if err == sql.ErrNoRows {
 			return
 		} else {
 			logger.Fatalf("Can't parse SQL-result: %s\n", err.Error())
 		}
 	}
-	job.path = string(pathb)
+	job.params = make([]string, len(config.MySql.Params))
+	for i := range config.MySql.Params {
+		job.params[i] = string(*(columns[i+1].(*[]byte)))
+	}
 
-	logger.Printf("Found new job #%d, path: %s\n", job.id, job.path)
+	logger.Printf("Found new job #%d, params: %v\n", job.id, job.params)
 
 	select {
 	case processJob <- &job:
